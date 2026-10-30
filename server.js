@@ -33,7 +33,7 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         console.log(`Device successfully mapped into room: ${roomId}`);
         // Notify any existing peer inside the room that a new user has joined
-        socket.to(roomId).emit('user-connected');
+        socket.to(roomId).emit('user-joined');
     });
 
     // 2. THE WEBRTC BRIDGE: Relays offers, answers, ice-candidates, and chat text between peers
