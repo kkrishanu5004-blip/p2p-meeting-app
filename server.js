@@ -50,6 +50,7 @@ io.on('connection', (socket) => {
 });
 
 // Start the local platform engine on port 3000
-http.listen(3000, () => {
-    console.log('Signaling core active and listening on http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+    console.log('Signaling core active on port ' + PORT);
 });
