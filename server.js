@@ -9,7 +9,7 @@ app.use(express.static('public'));
 
 // Serve the index.html file directly
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Endpoint to let frontend fetch the live tunnel link from meeting_link.txt
