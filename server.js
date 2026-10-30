@@ -29,12 +29,12 @@ io.on('connection', (socket) => {
     console.log('A device connected to signaling stack.');
 
     // 1. Peer attempts to establish or enter a targeted room context
-    socket.on('join-room', (roomId) => {
+   socket.on('join-room', (roomId) => {
         socket.join(roomId);
         console.log(`Device successfully mapped into room: ${roomId}`);
         // Notify any existing peer inside the room that a new user has joined
         socket.to(roomId).emit('user-joined');
-    });
+    }); // <-- This correctly closes socket.on('join-room')
 
     // 2. THE WEBRTC BRIDGE: Relays offers, answers, ice-candidates, and chat text between peers
     socket.on('signal-message', (data) => {
