@@ -97,12 +97,16 @@ let isAudioLive = false;
 let joined = false;
 let pendingCandidates = [];
 
+const TURN_PASSWORD = "5BPefkeyRL3hyZyr";
+    const TURN_USERNAME = "a2354ab4f99d076569165f5b";
 const config = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" }
-        // For friends on different/strict networks, add a TURN server:
-        // { urls: "turn:YOUR_TURN_HOST:3478", username: "USER", credential: "PASS" }
+        { urls: "stun:stun.relay.metered.ca:80" },
+        { urls: "turn:global.relay.metered.ca:80", username: TURN_USERNAME, credential: TURN_PASSWORD },
+        { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: TURN_USERNAME, credential: TURN_PASSWORD },
+        { urls: "turn:global.relay.metered.ca:443", username: TURN_USERNAME, credential: TURN_PASSWORD },
+        { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: TURN_USERNAME, credential: TURN_PASSWORD }
     ]
 };
 
