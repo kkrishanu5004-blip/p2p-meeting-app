@@ -103,15 +103,15 @@ let isAudioLive = false;
 const config = {
     iceServers: [
         {
-            // Reliable public STUN server cluster
-            urls: [
-                "stun:://google.com",
-                "stun:://google.com",
-                "stun:stun.mozilla.org"
-            ]
+            urls: "stun:://google.com"
         },
         {
-            // Free public TURN server to bypass home firewall/NAT restrictions
+            urls: "stun:://google.com"
+        },
+        {
+            urls: "stun:stun.mozilla.org"
+        },
+        {
             urls: "turn:openrelay.metered.ca:80",
             username: "openrelayproject",
             credential: "openrelayproject"
