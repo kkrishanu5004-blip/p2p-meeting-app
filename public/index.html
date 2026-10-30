@@ -100,14 +100,11 @@ let dataChannel;
 let isVideoLive = false;
 let isAudioLive = false;
 
-const config = { 
-    iceServers: [ 
-        { urls: "stun:://google.com" },
-        { urls: "stun:://google.com" },
-        { urls: "stun:://google.com" }
-    ] 
+const config = {
+    iceServers: [
+        { urls: "stun:://mozilla.com" }
+    ]
 };
-
 function fetchLiveTunnelLink() {
     fetch('/get-tunnel-link')
         .then(res => res.json())
