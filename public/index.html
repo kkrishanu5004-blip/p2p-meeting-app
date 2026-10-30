@@ -248,8 +248,12 @@ function sendTxtMessage() {
 }
 
 function initializePeerConnection(roomId) {
-    console.log("CRITICAL CHECK - Config contains:", config); // <-- Add this line
-    peerConnection = new RTCPeerConnection(config);
+    alert("Config value: " + JSON.stringify(config));
+    try {
+        peerConnection = new RTCPeerConnection(config);
+    } catch(e) {
+        console.error("Caught error:", e);
+    }
     if (localStream) {
         localStream.getTracks().forEach(track => {
             peerConnection.addTrack(track, localStream);
