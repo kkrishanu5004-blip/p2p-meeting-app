@@ -254,5 +254,43 @@ function initializePeerConnection(roomId) {
         receiveChannel.onmessage = (event) => appendMessage(event.data, false);
     };
 }
-
 async function joinRoom() {
+    const roomId = document.getElementById('room-id').value;
+    if (!roomId) return alert("Please enter or generate a Room ID first!");
+    
+    await initMedia();
+    initializePeerConnection(roomId);
+    
+    if (socket) {
+        socket.emit('join-room', roomId);
+        
+        socket.on('user-joined', async () => {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('signal-message', { room: roomId, type: 'offer', data: offer });
+        });
+        
+        socket.on('signal-message', async (msg) => {
+            if (msg.type === 'offer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.data));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.emit('signal-message', { room: roomId, type: 'answer', data: answer });
+            } else if (msg.type === 'answer') {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.data));
+            } else if (msg.type === 'candidate') {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(msg.data));
+            } else if (msg.type === 'chat') {
+                appendMessage(msg.data, false);
+            }
+        });
+    }
+    console.log("Joined room: " + roomId);
+}
+
+if (sharedRoom) {
+    setTimeout(joinRoom, 1000);
+}
+</script>
+</body>
+</html>
