@@ -191,11 +191,27 @@ async function toggleVideo() {
     const videoTracks = localStream.getVideoTracks();
     
     if (isVideoLive && videoTracks.length > 0) {
-        videoTracks[0].enabled = false;
+        // KILL HARDWARE LENS: This stops the camera sensor and turns off the light completely
+        videoTracks[0].stop();
         isVideoLive = false;
-    } else if (videoTracks.length > 0) {
-        videoTracks[0].enabled = true;
-        isVideoLive = true;
+    } else {
+        try {
+            // RE-ENGAGE HARDWARE LENS: Pull a fresh hardware stream from Windows
+            const newVideoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const newVideoTrack = newVideoStream.getVideoTracks()[0];
+            
+            if (videoTracks.length > 0) localStream.removeTrack(videoTracks[0]);
+            localStream.addTrack(newVideoTrack);
+            document.getElementById('local-video').srcObject = localStream;
+            
+            if (peerConnection) {
+                const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                if (sender) sender.replaceTrack(newVideoTrack);
+            }
+            isVideoLive = true;
+        } catch (err) {
+            console.error("Camera hardware re-engagement fail:", err);
+        }
     }
     updateVideoUI();
 }
