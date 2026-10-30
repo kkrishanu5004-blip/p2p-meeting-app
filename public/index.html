@@ -6,15 +6,14 @@
 body { font-family: sans-serif; background: #111; color: white; text-align: center; margin: 0; padding: 20px; }
 .main-layout { display: flex; justify-content: center; gap: 20px; max-width: 1200px; margin: 20px auto; flex-wrap: wrap; }
 .video-container { display: flex; flex-direction: column; gap: 15px; width: 60%; min-width: 320px; }
-video { width: 100%; background: #222; border-radius: 8px; transform: scaleX(-1); }
+video { width: 100%; background: #222; border-radius: 8px; }
+#local-video { transform: scaleX(-1); }
 
-/* Control Buttons Styling */
 .media-controls { display: flex; justify-content: center; gap: 15px; margin-top: 5px; }
 .btn-control { padding: 8px 18px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; color: #fff; font-size: 13px; }
 .btn-on { background: #333; border: 1px solid #555; }
 .btn-off { background: #dc3545; border: none; }
 
-/* Sleek Chat Box Container */
 .chat-container { width: 35%; min-width: 300px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; display: flex; flex-direction: column; height: 500px; }
 .chat-messages { flex: 1; padding: 15px; overflow-y: auto; text-align: left; font-size: 14px; display: flex; flex-direction: column; gap: 8px; }
 .message { padding: 6px 10px; border-radius: 6px; max-width: 80%; word-break: break-word; }
@@ -46,8 +45,7 @@ video { width: 100%; background: #222; border-radius: 8px; transform: scaleX(-1)
     <div class="video-container">
         <video id="local-video" autoplay playsinline muted></video>
         <video id="remote-video" autoplay playsinline></video>
-        
-        <!-- Interactive Mute Control Panel -->
+
         <div class="media-controls">
             <button id="mute-audio-btn" onclick="toggleAudio()" class="btn-control btn-off">🎤 Mic: OFF</button>
             <button id="mute-video-btn" onclick="toggleVideo()" class="btn-control btn-off">📹 Camera: OFF</button>
@@ -64,7 +62,6 @@ video { width: 100%; background: #222; border-radius: 8px; transform: scaleX(-1)
     </div>
 </div>
 
-<!-- SANDBOX 1: INSTANT UI GENERATION ENGINE -->
 <script>
 const randomRoomId = Math.floor(100000 + Math.random() * 900000);
 document.getElementById('room-id').value = randomRoomId;
@@ -75,7 +72,6 @@ if (sharedRoom) {
     document.getElementById('room-id').value = sharedRoom;
 }
 
-// Fixed link generator fallback (replaces 'localhost' dynamically if needed)
 function updateShareLink(baseOrigin) {
     let origin = baseOrigin || window.location.origin;
     const roomId = document.getElementById('room-id').value;
@@ -84,7 +80,6 @@ function updateShareLink(baseOrigin) {
 updateShareLink();
 </script>
 
-<!-- SANDBOX 2: WEBRTC SIGNALING CORE MODULE -->
 <script src="/socket.io/socket.io.js"></script>
 <script>
 let socket;
@@ -99,14 +94,18 @@ let peerConnection;
 let dataChannel;
 let isVideoLive = false;
 let isAudioLive = false;
+let joined = false;
+let pendingCandidates = [];
 
 const config = {
     iceServers: [
-        {
-            urls: "stun:://google.com"
-        }
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" }
+        // For friends on different/strict networks, add a TURN server:
+        // { urls: "turn:YOUR_TURN_HOST:3478", username: "USER", credential: "PASS" }
     ]
 };
+
 function fetchLiveTunnelLink() {
     fetch('/get-tunnel-link')
         .then(res => res.json())
@@ -118,207 +117,3 @@ function fetchLiveTunnelLink() {
             }
         })
         .catch(() => {
-            // If tunnel endpoint fails or doesn't exist, we rely on local link generation
-            updateShareLink();
-        });
-}
-fetchLiveTunnelLink();
-
-function updateAudioUI() {
-    const btn = document.getElementById('mute-audio-btn');
-    if (isAudioLive) {
-        btn.textContent = "🎙️ Mic: ON";
-        btn.className = "btn-control btn-on";
-    } else {
-        btn.textContent = "🎤 Mic: OFF";
-        btn.className = "btn-control btn-off";
-    }
-}
-
-function updateVideoUI() {
-    const btn = document.getElementById('mute-video-btn');
-    if (isVideoLive) {
-        btn.textContent = "📹 Camera: ON";
-        btn.className = "btn-control btn-on";
-    } else {
-        btn.textContent = "❌ Camera: OFF";
-        btn.className = "btn-control btn-off";
-    }
-}
-
-async function initMedia() {
-    if (!localStream) {
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-            document.getElementById('local-video').srcObject = localStream;
-            isAudioLive = true;
-            isVideoLive = true;
-            updateAudioUI();
-            updateVideoUI();
-        } catch (err) {
-            console.error("Media initialization failed:", err);
-            // Fallback: try capturing just audio or video if combined fails
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                document.getElementById('local-video').srcObject = localStream;
-                isVideoLive = true;
-                updateVideoUI();
-            } catch (vErr) {
-                console.error("Camera completely inaccessible:", vErr);
-            }
-        }
-    }
-}
-
-async function toggleAudio() {
-    if (!localStream) await initMedia();
-    if (!localStream) return;
-    const audioTracks = localStream.getAudioTracks();
-    
-    if (isAudioLive && audioTracks.length > 0) {
-        audioTracks[0].enabled = false;
-        isAudioLive = false;
-    } else if (audioTracks.length > 0) {
-        audioTracks[0].enabled = true;
-        isAudioLive = true;
-    }
-    updateAudioUI();
-}
-
-async function toggleVideo() {
-    if (!localStream) await initMedia();
-    if (!localStream) return;
-    const videoTracks = localStream.getVideoTracks();
-    
-    if (isVideoLive && videoTracks.length > 0) {
-        // CORRECT ARRAYS TERMINATION: Loop through all active tracks to completely kill hardware power
-        videoTracks.forEach(track => {
-            track.stop();
-        });
-        
-        // Break browser stream association to clear device connection cache immediately
-        document.getElementById('local-video').srcObject = null;
-        isVideoLive = false;
-    } else {
-        try {
-            // RE-ENGAGE HARDWARE: Fetch a completely clean fresh interface hardware stream
-            const newVideoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            const newVideoTrack = newVideoStream.getVideoTracks()[0];
-            
-            // Clean up legacy frames before binding fresh hardware
-            const oldTracks = localStream.getVideoTracks();
-            if (oldTracks.length > 0) localStream.removeTrack(oldTracks[0]);
-            
-            localStream.addTrack(newVideoTrack);
-            document.getElementById('local-video').srcObject = localStream;
-            
-            if (peerConnection) {
-                const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-                if (sender) sender.replaceTrack(newVideoTrack);
-            }
-            isVideoLive = true;
-        } catch (err) {
-            console.error("Camera hardware re-engagement fail:", err);
-        }
-    }
-    updateVideoUI();
-}
-
-function appendMessage(text, isMe) {
-    const chatBox = document.getElementById('chat-box');
-    const msgDiv = document.createElement('div');
-    msgDiv.classList.add('message', isMe ? 'msg-me' : 'msg-them');
-    msgDiv.textContent = text;
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function sendTxtMessage() {
-    const input = document.getElementById('chat-msg');
-    const text = input.value.trim();
-    if (!text) return;
-    
-    if (dataChannel && dataChannel.readyState === 'open') {
-        dataChannel.send(text);
-    } else if (socket) {
-        socket.emit('signal-message', { room: document.getElementById('room-id').value, type: 'chat', data: text });
-    }
-    appendMessage(text, true);
-    input.value = '';
-}
-
-function initializePeerConnection(roomId) {
-    alert("Config value: " + JSON.stringify(config));
-    try {
-        peerConnection = new RTCPeerConnection(config);
-    } catch(e) {
-        console.error("Caught error:", e);
-    }
-    if (localStream) {
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-    }
-
-    peerConnection.ontrack = (event) => {
-        const remoteVideo = document.getElementById('remote-video');
-        if (remoteVideo.srcObject !== event.streams[0]) {
-            remoteVideo.srcObject = event.streams[0];
-            console.log("Connected to Remote Video Stream Successfully!");
-        }
-    };
-
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate && socket) {
-            socket.emit('signal-message', { room: roomId, type: 'candidate', data: event.candidate });
-        }
-    };
-
-    dataChannel = peerConnection.createDataChannel("chat");
-    dataChannel.onmessage = (event) => appendMessage(event.data, false);
-    
-    peerConnection.ondatachannel = (event) => {
-        const receiveChannel = event.channel;
-        receiveChannel.onmessage = (event) => appendMessage(event.data, false);
-    };
-}
-async function joinRoom() {
-    const roomId = document.getElementById('room-id').value;
-    if (!roomId) return alert("Please enter or generate a Room ID first!");
-    
-    await initMedia();
-    initializePeerConnection(roomId);
-    
-    if (socket) {
-        socket.emit('join-room', roomId);
-        
-        socket.on('user-joined', async () => {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('signal-message', { room: roomId, type: 'offer', data: offer });
-        });
-        
-        socket.on('signal-message', async (msg) => {
-            if (msg.type === 'offer') {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.data));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                socket.emit('signal-message', { room: roomId, type: 'answer', data: answer });
-            } else if (msg.type === 'answer') {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.data));
-            } else if (msg.type === 'candidate') {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(msg.data));
-            } else if (msg.type === 'chat') {
-                appendMessage(msg.data, false);
-            }
-        });
-    }
-    console.log("Joined room: " + roomId);
-}
-
-if (sharedRoom) {
-    setTimeout(joinRoom, 1000);
-}
-</script>
-</body>
-</html>
