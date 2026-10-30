@@ -336,7 +336,9 @@ async function joinRoom() {
             } catch (e) { console.error("Signaling error:", e); }
         });
 
-        socket.emit('join-room', roomId);
+       const enter = () => socket.emit('join-room', roomId);
+socket.on('connect', enter); // rejoins automatically after any reconnect
+if (socket.connected) enter();
     }
     console.log("Joined room: " + roomId);
 }
