@@ -269,7 +269,21 @@ function initializePeerConnection(roomId) {
         }
     };
 
-    peerConnection.onconnectionstatechange = () => console.log("Connection state:", peerConnection.connectionState);
+    peerConnection.onconnectionstatechange = async () => {
+    console.log("Connection state:", peerConnection.connectionState);
+    if (peerConnection.connectionState === 'connected') {
+        try {
+            const stats = await peerConnection.getStats();
+            let pair;
+            stats.forEach(r => { if (r.type === 'transport' && r.selectedCandidatePairId) pair = stats.get(r.selectedCandidatePairId); });
+            if (pair) {
+                const local = stats.get(pair.localCandidateId);
+                const remote = stats.get(pair.remoteCandidateId);
+                console.log("PATH USED -> your side:", local.candidateType, "| other side:", remote.candidateType, "| server:", local.url || "none");
+            }
+        } catch (e) { console.warn("Stats unavailable", e); }
+    }
+};
     peerConnection.oniceconnectionstatechange = () => console.log("ICE state:", peerConnection.iceConnectionState);
 
     dataChannel = peerConnection.createDataChannel("chat");
